@@ -21,7 +21,7 @@ import requests
 
 # ------------------ تنظیمات قابل تغییر ------------------
 SYMBOL = "BTCUSDT"
-INTERVAL = "1h"
+INTERVAL = "5m"
 RCI_LENGTH = 81
 UPPER_LEVEL = 60
 LOWER_LEVEL = -60
