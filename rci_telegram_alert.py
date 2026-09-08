@@ -33,10 +33,13 @@ TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
 
 def fetch_klines(symbol: str, interval: str, limit: int) -> pd.DataFrame:
-    """واکشی کندل‌ها از API عمومی بایننس (بدون نیاز به کلید)."""
-    url = "https://api.binance.com/api/v3/klines"
+    """واکشی کندل‌ها از دامنه‌ی عمومی و بدون محدودیت جغرافیایی بایننس (بدون نیاز به کلید)."""
+    url = "https://data-api.binance.vision/api/v3/klines"
     params = {"symbol": symbol, "interval": interval, "limit": limit}
     resp = requests.get(url, params=params, timeout=10)
+    if resp.status_code != 200:
+        print(f"خطا در واکشی دیتا - کد وضعیت: {resp.status_code}")
+        print(f"پاسخ سرور: {resp.text[:500]}")
     resp.raise_for_status()
     data = resp.json()
 
