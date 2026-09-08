@@ -28,8 +28,8 @@ LOWER_LEVEL = -60
 LOOKBACK = 200  # تعداد کندل واکشی‌شده (باید به‌وضوح بیشتر از RCI_LENGTH باشد)
 # ----------------------------------------------------------
 
-TELEGRAM_TOKEN = os.environ.get("8865295301:AAE56mrTnwB4ePaq16lx9kEk4mS2cUlGlGk")
-TELEGRAM_CHAT_ID = os.environ.get("@Mahrci1_bot")
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
 
 def fetch_klines(symbol: str, interval: str, limit: int) -> pd.DataFrame:
