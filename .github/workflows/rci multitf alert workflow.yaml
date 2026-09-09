@@ -1,0 +1,30 @@
+# این فایل را در مسیر .github/workflows/rci_multitf_alert.yml در ریپازیتوری قرار دهید
+
+name: RCI Multi-Timeframe Telegram Alert
+
+on:
+  schedule:
+    # هر ۵ دقیقه (به وقت UTC)
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}  # اجرای دستی برای تست از تب Actions
+
+jobs:
+  check-rci-multitf:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run multi-timeframe RCI check
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python rci_multitf_alert.py
