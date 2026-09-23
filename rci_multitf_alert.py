@@ -36,8 +36,8 @@ H1_LOWER = -60
 H1_LOOKBACK = 500  # حدود ۲۰ روز، برای پیدا کردن آخرین عبور رژیم
 
 M5_INTERVAL = "5m"
-M5_UPPER = 80
-M5_LOWER = -80
+M5_UPPER = 79
+M5_LOWER = -79
 M5_LOOKBACK = 200
 
 M15_INTERVAL = "15m"
