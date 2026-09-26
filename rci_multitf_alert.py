@@ -140,9 +140,9 @@ def main() -> int:
 
     triggered = False
     if regime == "bearish":
-        triggered = prev_5m >= M5_UPPER > curr_5m
+        triggered = prev_5m >= M5_UPPER >= curr_5m
     elif regime == "bullish":
-        triggered = prev_5m <= M5_LOWER < curr_5m
+        triggered = prev_5m <= M5_LOWER <= curr_5m
 
     if not triggered:
         print(f"بدون سیگنال ۵ دقیقه‌ای. RCI81(5m): {curr_5m:.2f}")
