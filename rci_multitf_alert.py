@@ -95,9 +95,9 @@ def find_last_regime(rci: pd.Series, upper: float, lower: float):
         prev, curr = rci.iloc[i - 1], rci.iloc[i]
         if pd.isna(prev) or pd.isna(curr):
             continue
-        if prev <= upper < curr:
+        if prev <= upper <= curr:
             last_up = i
-        if prev >= lower > curr:
+        if prev >= lower >= curr:
             last_down = i
     if last_up == -1 and last_down == -1:
         return None
@@ -159,7 +159,7 @@ def main() -> int:
     curr_15m = df_15m["rci"].iloc[-1]
 
     if regime == "bearish":
-        filter_ok = curr_15m > M15_UPPER
+        filter_ok = curr_15m >= M15_UPPER
         message = (
             f"🟠 {SYMBOL} — سیگنال ۵ دقیقه‌ای (رژیم نزولی، بر اساس 1H به -۶۰ رسیده)\n"
             f"RCI81(5m) به صورت نزولی به {M5_UPPER} رسید: {curr_5m:.2f}\n"
@@ -168,7 +168,7 @@ def main() -> int:
             f"زمان کندل ۵ دقیقه: {candle_time_5m}"
         )
     else:  # bullish
-        filter_ok = curr_15m < M15_LOWER
+        filter_ok = curr_15m <= M15_LOWER
         message = (
             f"🟣 {SYMBOL} — سیگنال ۵ دقیقه‌ای (رژیم صعودی، بر اساس 1H به +۶۰ رسیده)\n"
             f"RCI81(5m) به صورت صعودی به {M5_LOWER} رسید: {curr_5m:.2f}\n"
