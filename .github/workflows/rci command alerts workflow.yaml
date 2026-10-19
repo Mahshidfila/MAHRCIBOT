@@ -1,0 +1,58 @@
+# این فایل را در مسیر .github/workflows/rci_command_alerts.yml قرار دهید
+
+name: RCI Command Alerts
+
+on:
+  workflow_dispatch: {}   # اجرای اصلی: هر ۱ دقیقه از cron-job.org
+  schedule:
+    - cron: "4-59/5 * * * *"   # پشتیبان: اگر cron-job.org کار نکرد، حداقل هر ~۵ دقیقه
+
+permissions:
+  contents: write   # برای ذخیره‌ی وضعیت در برنچ bot-state
+
+concurrency:
+  group: rci-command-alerts
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Load state
+        run: |
+          if git fetch --depth=1 origin bot-state 2>/dev/null; then
+            git show FETCH_HEAD:state.json > state.json || echo '{}' > state.json
+          else
+            echo '{}' > state.json
+          fi
+          cp state.json state.before
+
+      - name: Run RCI command alerts
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python rci_command_alerts.py
+
+      - name: Save state
+        run: |
+          if ! cmp -s state.json state.before; then
+            git config user.name "rci-bot"
+            git config user.email "rci-bot@users.noreply.github.com"
+            git checkout --orphan bot-state-new
+            git rm -rf --cached . > /dev/null
+            git add -f state.json
+            git commit -q -m "state"
+            git push -f origin bot-state-new:bot-state
+          fi
