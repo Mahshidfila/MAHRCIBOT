@@ -200,10 +200,10 @@ def check_alerts(state: dict, klines_cache: dict) -> None:
             level = c["level"]
             if c["direction"] == "down":
                 hit = prev > level >= curr
-                icon, way = "🔴", "نزولی"
+                icon, way = "🐦‍🔥🍁", "نزولی"
             else:
                 hit = prev < level <= curr
-                icon, way = "🟢", "صعودی"
+                icon, way = "🐉🐲", "صعودی"
             if hit:
                 send_telegram(
                     f"{icon} {SYMBOL} — RCI81 ({tf}) به {level:+d} رسید (عبور {way})\n"
