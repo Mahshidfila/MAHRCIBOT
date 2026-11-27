@@ -7,6 +7,10 @@
     11 -> هشدار وقتی RCI81 در تایم‌فریم ۱ دقیقه به +۹۰ برسد (عبور صعودی)
     50 -> هشدار وقتی RCI81 در تایم‌فریم ۵ دقیقه به -۸۰ برسد (عبور نزولی)
     51 -> هشدار وقتی RCI81 در تایم‌فریم ۵ دقیقه به +۸۰ برسد (عبور صعودی)
+    12 -> هشدار وقتی RCI81 در تایم‌فریم ۱ دقیقه از ناحیه‌ی زیر -۸۰ خارج شود
+          (یعنی از پایینِ -۸۰ برگردد و بالاتر از -۸۰ بسته شود)
+    13 -> هشدار وقتی RCI81 در تایم‌فریم ۱ دقیقه از ناحیه‌ی بالای +۸۰ خارج شود
+          (یعنی از بالای +۸۰ برگردد و پایین‌تر از +۸۰ بسته شود)
 
 - کدها با هم قابل ترکیب‌اند (مثلاً هم ۱۰ و هم ۵۱ فعال باشد).
 - هر کد تا وقتی ۰۰ نفرستید فعال می‌ماند و هر بار که عبور رخ دهد پیام می‌فرستد.
@@ -36,11 +40,14 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
 # direction: "down" یعنی عبور از بالا به پایین‌تر از level ، "up" یعنی عبور از پایین به بالاتر
+# event: "reach" یعنی «رسیدن به level» ، "exit" یعنی «خروج از ناحیه‌ی افراطی» (برگشت از level)
 COMMANDS = {
-    "10": {"tf": "1m", "direction": "down", "level": -90},
-    "11": {"tf": "1m", "direction": "up", "level": 90},
-    "50": {"tf": "5m", "direction": "down", "level": -80},
-    "51": {"tf": "5m", "direction": "up", "level": 80},
+    "10": {"tf": "1m", "direction": "down", "level": -90, "event": "reach"},
+    "11": {"tf": "1m", "direction": "up", "level": 90, "event": "reach"},
+    "12": {"tf": "1m", "direction": "up", "level": -80, "event": "exit"},
+    "13": {"tf": "1m", "direction": "down", "level": 80, "event": "exit"},
+    "50": {"tf": "5m", "direction": "down", "level": -80, "event": "reach"},
+    "51": {"tf": "5m", "direction": "up", "level": 80, "event": "reach"},
 }
 
 DIGIT_MAP = str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789")
@@ -50,6 +57,8 @@ HELP_TEXT = (
     "00 → لغو همه‌ی هشدارها\n"
     "10 → RCI در ۱ دقیقه به -90 برسد\n"
     "11 → RCI در ۱ دقیقه به +90 برسد\n"
+    "12 → RCI در ۱ دقیقه از زیر -80 خارج شود (برگردد بالای -80)\n"
+    "13 → RCI در ۱ دقیقه از بالای +80 خارج شود (برگردد زیر +80)\n"
     "50 → RCI در ۵ دقیقه به -80 برسد\n"
     "51 → RCI در ۵ دقیقه به +80 برسد"
 )
@@ -134,6 +143,13 @@ def describe(code: str) -> str:
     c = COMMANDS[code]
     tf = "۱ دقیقه" if c["tf"] == "1m" else "۵ دقیقه"
     way = "از بالا به پایین" if c["direction"] == "down" else "از پایین به بالا"
+    if c["event"] == "exit":
+        zone = "زیر" if c["level"] < 0 else "بالای"
+        back = "بالای" if c["direction"] == "up" else "زیر"
+        return (
+            f"RCI81 در تایم‌فریم {tf} از ناحیه‌ی {zone} {c['level']:+d} خارج شود "
+            f"(برگردد {back} {c['level']:+d})"
+        )
     return f"RCI81 در تایم‌فریم {tf} {way} به {c['level']:+d} برسد"
 
 
@@ -198,15 +214,28 @@ def check_alerts(state: dict, klines_cache: dict) -> None:
             if pd.isna(prev) or pd.isna(curr):
                 continue
             level = c["level"]
-            if c["direction"] == "down":
-                hit = prev > level >= curr
-                icon, way = "🔴🐦‍🔥🍁", "نزولی"
+            if c["event"] == "exit":
+                # خروج از ناحیه: قبلاً داخل ناحیه بوده (روی خود level هم داخل حساب می‌شود)
+                # و کندل جدید بیرون از آن بسته شده
+                if c["direction"] == "up":      # از زیر -80 به بالای -80
+                    hit = prev <= level < curr
+                    icon = "🟠"
+                    headline = f"از ناحیه‌ی زیر {level:+d} خارج شد (برگشت به بالای {level:+d})"
+                else:                            # از بالای +80 به زیر +80
+                    hit = prev >= level > curr
+                    icon = "🟣"
+                    headline = f"از ناحیه‌ی بالای {level:+d} خارج شد (برگشت به زیر {level:+d})"
             else:
-                hit = prev < level <= curr
-                icon, way = "🟢🐉🐲", "صعودی"
+                if c["direction"] == "down":
+                    hit = prev > level >= curr
+                    icon, way = "🔴🐦‍🔥🍁", "نزولی"
+                else:
+                    hit = prev < level <= curr
+                    icon, way = "🟢🐉🐲", "صعودی"
+                headline = f"به {level:+d} رسید (عبور {way})"
             if hit:
                 send_telegram(
-                    f"{icon} {SYMBOL} — RCI81 ({tf}) به {level:+d} رسید (عبور {way})\n"
+                    f"{icon} {SYMBOL} — RCI81 ({tf}) {headline}\n"
                     f"مقدار فعلی: {curr:.2f} | قبلی: {prev:.2f}\n"
                     f"زمان کندل: {fmt_time(int(df['open_time'].iloc[i]), minutes)}\n"
                     f"(کد {code} — برای لغو: 00)"
